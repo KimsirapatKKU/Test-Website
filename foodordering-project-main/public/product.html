@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>De Cottage - รายละเอียดเมนู</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="product-page">
+
+  <header class="product-header">
+    <a href="index.html" class="back-btn" id="backBtn">◄ กลับ</a>
+  </header>
+
+  <main class="product-main">
+    <div class="product-image-wrap">
+      <img id="productImage" src="" alt="" class="product-image">
+    </div>
+    <h1 class="product-title" id="productTitle">—</h1>
+    <p class="product-price" id="productPrice">฿ 0.00/จาน</p>
+
+    <section class="product-section">
+      <h3 class="section-title">ทานร้าน หรือ ใส่กล่อง</h3>
+      <label class="option-row">
+        <input type="radio" name="dining" value="takeaway" id="optTakeaway">
+        <span>ใส่กล่อง</span>
+      </label>
+      <label class="option-row">
+        <input type="radio" name="dining" value="dinein" id="optDinein" checked>
+        <span>ทานร้าน</span>
+      </label>
+    </section>
+
+    <section class="product-section">
+      <h3 class="section-title">ไม่ใส่ผัก</h3>
+      <label class="option-row">
+        <input type="checkbox" id="noVegetable">
+        <span>ไม่ใส่ผัก</span>
+      </label>
+    </section>
+
+    <section class="product-section">
+      <h3 class="section-title">โน้ต</h3>
+      <textarea id="productNote" class="product-note" rows="3" placeholder="กรณาระบุรสชาติ ความชอบส่วนตัว อื่นๆ"></textarea>
+    </section>
+
+    <div class="quantity-row">
+      <button type="button" class="qty-btn" id="qtyMinus" aria-label="ลดจำนวน">−</button>
+      <span class="qty-value" id="qtyValue">1</span>
+      <button type="button" class="qty-btn" id="qtyPlus" aria-label="เพิ่มจำนวน">+</button>
+    </div>
+
+    <button type="button" class="add-cart-btn" id="addCartBtn">เพิ่ม ฿ 0.00</button>
+  </main>
+
+  <script src="product.js"></script>
+</body>
+
+</html>
