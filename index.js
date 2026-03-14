@@ -34,13 +34,14 @@ app.get("/api/menus/:id", async (req, res) => {
 
 app.post("/api/orders", async (req, res) => {
 
-  const { table, items } = req.body;
+  const { user, table, items } = req.body;
 
   if (!items || items.length === 0) {
     return res.status(400).json({ error: "ไม่มีรายการอาหาร" });
   }
 
   const order = await Order.create({
+    user,
     table,
     items
   });
