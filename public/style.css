@@ -1559,3 +1559,165 @@ a.icon-btn {
 .chef-done-btn:hover{
   background:#e55a00;
 }
+/* ================================
+   MOBILE UI FIX
+   ================================ */
+
+@media (max-width:768px){
+
+/* ---------- Topbar ---------- */
+
+.topbar{
+  padding:8px 12px;
+  align-items:center;
+}
+
+.logo h1{
+  font-size:18px;
+}
+
+.table-box{
+  font-size:13px;
+  padding:6px 10px;
+  border-radius:10px;
+}
+
+.icon-btn{
+  width:34px;
+  height:34px;
+  font-size:15px;
+}
+
+/* ---------- Search ---------- */
+
+.search-box{
+  padding:8px 12px;
+}
+
+.search-box input{
+  font-size:14px;
+  padding:8px 12px;
+  border-radius:10px;
+}
+
+/* ---------- Category Scroll ---------- */
+
+.categories{
+  overflow-x:auto;
+  white-space:nowrap;
+  padding:8px 10px;
+  gap:8px;
+}
+
+.categories::-webkit-scrollbar{
+  display:none;
+}
+
+.cat{
+  display:inline-block;
+  padding:7px 14px;
+  font-size:13px;
+  border-radius:20px;
+}
+
+/* ---------- Menu Grid ---------- */
+
+.menu{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:14px;
+  padding:12px;
+}
+
+/* ---------- Menu Card ---------- */
+
+.card{
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 4px 10px rgba(0,0,0,0.08);
+}
+
+.card img{
+  width:100%;
+  height:120px;
+  object-fit:cover;
+}
+
+.card-body{
+  padding:10px;
+  font-size:14px;
+}
+
+.price{
+  font-size:15px;
+  font-weight:600;
+  color:#e85d04;
+}
+
+/* ---------- Floating Order Button ---------- */
+
+#orderBtn{
+  position:fixed;
+  bottom:18px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:1000;
+
+  padding:12px 22px;
+  border-radius:30px;
+  font-size:15px;
+
+  box-shadow:0 6px 18px rgba(0,0,0,0.25);
+}
+
+/* เว้นพื้นที่ไม่ให้เมนูโดนบัง */
+
+body{
+  padding-bottom:90px;
+}
+
+/* ---------- Tarot Button ---------- */
+
+#tarotBox{
+  width:50px;
+  height:50px;
+  font-size:20px;
+  right:14px;
+  bottom:90px;
+}
+
+/* ---------- Order Popup (Cart) ---------- */
+
+.popup-order{
+  width:100%;
+  height:90vh;
+  border-radius:20px 20px 0 0;
+}
+
+.popup-order-body{
+  max-height:60vh;
+  overflow-y:auto;
+}
+
+/* ---------- Order Item ---------- */
+
+.order-item-img{
+  width:50px;
+  height:50px;
+  border-radius:10px;
+  object-fit:cover;
+}
+
+.qty-btn-group button{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+}
+
+/* ---------- Bill Popup ---------- */
+
+#billPopup .popup-order{
+  height:90vh;
+}
+
+}
