@@ -1654,22 +1654,6 @@ a.icon-btn {
   color:#e85d04;
 }
 
-/* ---------- Floating Order Button ---------- */
-
-#orderBtn{
-  position:fixed;
-  bottom:18px;
-  left:50%;
-  transform:translateX(-50%);
-  z-index:1000;
-
-  padding:12px 22px;
-  border-radius:30px;
-  font-size:15px;
-
-  box-shadow:0 6px 18px rgba(0,0,0,0.25);
-}
-
 /* เว้นพื้นที่ไม่ให้เมนูโดนบัง */
 
 body{
