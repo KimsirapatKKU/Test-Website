@@ -203,7 +203,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const subtotal = item.price * item.quantity;
       total += subtotal;
 
-      const identifier = item.id || item.name;
+      const identifier = item.id + "_" + (item.note || "");
 
       // --- ส่วนสำคัญที่ทำให้ 'ไม่ผัก' และ 'รูป' ขึ้น ---
       // 1. ดึงหมายเหตุ (เช่น ไม่ผัก) มาแสดงเป็นสีเทา
@@ -243,7 +243,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // ฟังก์ชันสำหรับปุ่ม + และ - ในหน้าตะกร้า
   window.updateQty = function (id, delta) {
     let cart = getCart();
-    const idx = cart.findIndex(i => i.id == id || i.name == id);
+    const idx = cart.findIndex(i => 
+    (i.id + "_" + (i.note || "")) === id
+  );
     if (idx > -1) {
       cart[idx].quantity += delta;
       if (cart[idx].quantity <= 0) cart.splice(idx, 1);
