@@ -1,12 +1,16 @@
 const express = require("express");
+const mongoose = require("mongoose");   // เพิ่มตัวนี้
 const app = express();
+app.use(express.static("public"));
+app.use(express.json());   
+
 const Menus = require('./models/menu')
 const Taro = require("./models/taro")
 const Order = require("./models/order")
 
-app.use(express.static("public"));
-app.use(express.json());
-
+mongoose.connect("mongodb://Tonnam:Tonnaem1494@ac-jwxvccx-shard-00-00.jjyarh1.mongodb.net:27017,ac-jwxvccx-shard-00-01.jjyarh1.mongodb.net:27017,ac-jwxvccx-shard-00-02.jjyarh1.mongodb.net:27017/foodDB?ssl=true&replicaSet=atlas-6kn3u1-shard-0&authSource=admin&retryWrites=true")
+.then(() => console.log("MongoDB connected"))
+.catch(err => console.log(err));
 
 
 
@@ -34,14 +38,13 @@ app.get("/api/menus/:id", async (req, res) => {
 
 app.post("/api/orders", async (req, res) => {
 
-  const { user, table, items } = req.body;
+  const { table, items } = req.body;
 
   if (!items || items.length === 0) {
     return res.status(400).json({ error: "ไม่มีรายการอาหาร" });
   }
 
   const order = await Order.create({
-    user,
     table,
     items
   });
