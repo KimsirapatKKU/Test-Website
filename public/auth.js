@@ -124,7 +124,8 @@ document.addEventListener("submit", async (e) => {
     await setDoc(userRef, {
       passwordHash: await hash(pass),
       role: "user",
-      profileImg: ""
+      profileImg: "",
+      createdAt: new Date()
     });
 
     alert("สมัครสำเร็จ!");
