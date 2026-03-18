@@ -10,19 +10,37 @@ app.use(express.json());
 try {
   if (admin.apps.length === 0) {
     let credential;
-    try {
-      // eslint-disable-next-line import/no-unresolved
-      const serviceAccount = require("./serviceAccountKey.json");
-      credential = admin.credential.cert(serviceAccount);
-    } catch (e) {
+
+    if (process.env.FIREBASE_KEY) {
+      credential = admin.credential.cert(
+        JSON.parse(process.env.FIREBASE_KEY)
+      );
+    } else {
       credential = admin.credential.applicationDefault();
     }
+
     admin.initializeApp({ credential });
   }
 } catch (e) {
   console.error("Firebase init error:", e);
 }
-const db = admin.firestore();
+
+console.log("FIREBASE:", process.env.FIREBASE_KEY ? "OK" : "NOT FOUND");
+
+try {
+  const parsed = JSON.parse(process.env.FIREBASE_KEY);
+  console.log("PROJECT ID:", parsed.project_id);
+} catch (e) {
+  console.error("JSON ERROR");
+}
+
+let db;
+
+try {
+  db = admin.firestore();
+} catch (e) {
+  console.error("Firestore init error:", e);
+}
 
 function toIsoMaybeTimestamp(value) {
   if (!value) return value;
@@ -51,6 +69,9 @@ function serializeOrderDoc(doc) {
 
 
 app.get("/api/menus", async (req, res) => {
+  if (!db) {
+    return res.status(500).json({ message: "Database not initialized" });
+  }
   try {
     const snap = await db.collection("Menus").get();
     const menus = snap.docs.map((doc) => ({ _id: doc.id, ...doc.data() }));
@@ -64,6 +85,9 @@ app.get("/api/menus", async (req, res) => {
 
 // ดึงข้อมูลเมนูแต่ละอัน (สำหรับหน้า product.html)
 app.get("/api/menus/:id", async (req, res) => {
+  if (!db) {
+    return res.status(500).json({ message: "Database not initialized" });
+  }
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ error: "id ไม่ถูกต้อง" });
   try {
@@ -78,6 +102,9 @@ app.get("/api/menus/:id", async (req, res) => {
 
 
 app.post("/api/orders", async (req, res) => {
+  if (!db) {
+    return res.status(500).json({ message: "Database not initialized" });
+  }
 
   const { table, items, user } = req.body;
 
@@ -105,6 +132,9 @@ app.post("/api/orders", async (req, res) => {
 
 
 app.get("/api/orders", async (req, res) => {
+  if (!db) {
+    return res.status(500).json({ message: "Database not initialized" });
+  }
 
   const table = req.query.table;
 
@@ -136,6 +166,9 @@ app.get("/api/orders", async (req, res) => {
 });
 
 app.put("/api/orders/:id/status", async (req, res) => {
+  if (!db) {
+    return res.status(500).json({ message: "Database not initialized" });
+  }
 
   const { status } = req.body;
 
@@ -179,6 +212,10 @@ app.post("/alert/clear", (req, res) => {
 });
 
 app.get("/api/tarot", async (req,res)=>{
+  if (!db) {
+    return res.status(500).json({ message: "Database not initialized" });
+  }
+
   try {
     const snap = await db.collection("Tarots").get();
     const cards = snap.docs.map((doc) => ({ _id: doc.id, ...doc.data() }));
@@ -188,6 +225,8 @@ app.get("/api/tarot", async (req,res)=>{
   }
 })
 
-app.listen(3000, () => {
-  console.log("Server running at http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });
