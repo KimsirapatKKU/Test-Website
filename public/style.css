@@ -1705,3 +1705,15 @@ body{
 }
 
 }
+.bill-total{
+font-weight:bold;
+margin-top:5px;
+}
+
+.bill-grand-total{
+font-size:20px;
+font-weight:bold;
+text-align:right;
+margin-top:15px;
+color:#ff6a00;
+}
