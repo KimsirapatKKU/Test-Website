@@ -1,24 +1,60 @@
 const express = require("express");
-const mongoose = require("mongoose");   // เพิ่มตัวนี้
+const admin = require("firebase-admin");
 const app = express();
 app.use(express.static("public"));
 app.use(express.json());   
 
-const Menus = require('./models/menu')
-const Taro = require("./models/taro")
-const Order = require("./models/order")
+// Firebase Admin (Firestore) สำหรับเมนู
+// - แนะนำให้ตั้ง env `GOOGLE_APPLICATION_CREDENTIALS` ชี้ไปที่ service account json
+// - หรือวางไฟล์ไว้ที่ `./serviceAccountKey.json`
+try {
+  if (admin.apps.length === 0) {
+    let credential;
+    try {
+      // eslint-disable-next-line import/no-unresolved
+      const serviceAccount = require("./serviceAccountKey.json");
+      credential = admin.credential.cert(serviceAccount);
+    } catch (e) {
+      credential = admin.credential.applicationDefault();
+    }
+    admin.initializeApp({ credential });
+  }
+} catch (e) {
+  console.error("Firebase init error:", e);
+}
+const db = admin.firestore();
 
-mongoose.connect("mongodb://Tonnam:Tonnaem1494@ac-jwxvccx-shard-00-00.jjyarh1.mongodb.net:27017,ac-jwxvccx-shard-00-01.jjyarh1.mongodb.net:27017,ac-jwxvccx-shard-00-02.jjyarh1.mongodb.net:27017/foodDB?ssl=true&replicaSet=atlas-6kn3u1-shard-0&authSource=admin&retryWrites=true")
-.then(() => console.log("MongoDB connected"))
-.catch(err => console.log(err));
+function toIsoMaybeTimestamp(value) {
+  if (!value) return value;
+  if (typeof value.toDate === "function") {
+    try {
+      return value.toDate().toISOString();
+    } catch (e) {
+      return value;
+    }
+  }
+  return value;
+}
+
+function serializeOrderDoc(doc) {
+  const data = doc.data() || {};
+  return {
+    _id: doc.id,
+    ...data,
+    createdAt: toIsoMaybeTimestamp(data.createdAt)
+  };
+}
+
+
 
 
 
 
 app.get("/api/menus", async (req, res) => {
   try {
-    const menus = await Menus.find()
-    res.json(menus)
+    const snap = await db.collection("Menus").get();
+    const menus = snap.docs.map((doc) => ({ _id: doc.id, ...doc.data() }));
+    res.json(menus);
   } catch (error) {
     res.status(500).json({ message: "Error fetching menus" })
   }
@@ -30,9 +66,14 @@ app.get("/api/menus", async (req, res) => {
 app.get("/api/menus/:id", async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) return res.status(400).json({ error: "id ไม่ถูกต้อง" });
-  const menu = await Menus.findOne({ id });
-  if (!menu) return res.status(404).json({ error: "ไม่พบเมนู" });
-  res.json(menu);
+  try {
+    const snap = await db.collection("Menus").where("id", "==", id).limit(1).get();
+    if (snap.empty) return res.status(404).json({ error: "ไม่พบเมนู" });
+    const doc = snap.docs[0];
+    res.json({ _id: doc.id, ...doc.data() });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching menus" });
+  }
 });
 
 
@@ -44,12 +85,20 @@ app.post("/api/orders", async (req, res) => {
     return res.status(400).json({ error: "ไม่มีรายการอาหาร" });
   }
 
-  const order = await Order.create({
-    table,
-    items
-  });
+  try {
+    const orderData = {
+      table: table || "-",
+      items,
+      status: "pending",
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    };
 
-  res.json(order);
+    const ref = await db.collection("Orders").add(orderData);
+    const snap = await ref.get();
+    res.json(serializeOrderDoc(snap));
+  } catch (error) {
+    res.status(500).json({ message: "Error creating order" });
+  }
 
 });
 
@@ -58,15 +107,30 @@ app.get("/api/orders", async (req, res) => {
 
   const table = req.query.table;
 
-  let query = {};
-  if (table) query.table = table;
+  try {
+    let snap;
+    if (table) {
+      // เลี่ยงปัญหา composite index (where + orderBy) โดย sort ในหน่วยความจำแทน
+      snap = await db.collection("Orders").where("table", "==", table).get();
+    } else {
+      snap = await db.collection("Orders").orderBy("createdAt", "desc").get();
+    }
 
-  const orders = await Order.find({
-    ...query,
-    status: { $ne: "done" }
-  }).sort({ createdAt: -1 });
+    const orders = snap.docs
+      .map(serializeOrderDoc)
+      // คง behavior เดิม: ไม่เอา status = done
+      .filter((o) => o.status !== "done")
+      // ถ้าเป็น table-filter (ไม่มี orderBy) ให้เรียงเอง
+      .sort((a, b) => {
+        const ta = a.createdAt ? Date.parse(a.createdAt) : 0;
+        const tb = b.createdAt ? Date.parse(b.createdAt) : 0;
+        return tb - ta;
+      });
 
-  res.json(orders);
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching orders" });
+  }
 
 });
 
@@ -74,13 +138,19 @@ app.put("/api/orders/:id/status", async (req, res) => {
 
   const { status } = req.body;
 
-  const order = await Order.findByIdAndUpdate(
-    req.params.id,
-    { status },
-    { returnDocument: "after" }
-  );
+  if (!status) return res.status(400).json({ error: "ต้องส่ง status" });
 
-  res.json(order);
+  try {
+    const ref = db.collection("Orders").doc(req.params.id);
+    const before = await ref.get();
+    if (!before.exists) return res.status(404).json({ error: "ไม่พบออเดอร์" });
+
+    await ref.update({ status });
+    const after = await ref.get();
+    res.json(serializeOrderDoc(after));
+  } catch (error) {
+    res.status(500).json({ message: "Error updating order status" });
+  }
 
 });
 
@@ -108,8 +178,13 @@ app.post("/alert/clear", (req, res) => {
 });
 
 app.get("/api/tarot", async (req,res)=>{
-  const cards = await Taro.find()
-  res.json(cards)
+  try {
+    const snap = await db.collection("Tarots").get();
+    const cards = snap.docs.map((doc) => ({ _id: doc.id, ...doc.data() }));
+    res.json(cards);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching tarot" });
+  }
 })
 
 app.listen(3000, () => {

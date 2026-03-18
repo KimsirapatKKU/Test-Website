@@ -14,9 +14,7 @@ const firebaseConfig = {
   projectId: "ordering-project-75e55"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
+const app = initializeApp(firebaseConfig);                                                                                                          
 /* ================= HELPERS ================= */
 async function hash(text) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -104,32 +102,14 @@ document.addEventListener("submit", async (e) => {
   }
 
   /* ----- REGISTER ----- */
-    if (e.target.id === "registerForm") {
+  if (e.target.id === "registerForm") {
     const user = document.getElementById("regUser").value.trim();
     const pass = document.getElementById("regPass").value;
-
     if (pass !== document.getElementById("regPassConfirm").value) {
-      showError("registerError", "❌ รหัสผ่านไม่ตรงกัน");
-      return;
+      showError("registerError", "❌ รหัสผ่านไม่ตรงกัน"); return;
     }
-
-    const userRef = doc(db, "Account", user);
-    const snap = await getDoc(userRef);
-
-    if (snap.exists()) {
-      showError("registerError", "❌ username นี้มีคนใช้แล้ว");
-      return;
-    }
-
-    await setDoc(userRef, {
-      passwordHash: await hash(pass),
-      role: "user",
-      profileImg: "",
-      createdAt: new Date()
-    });
-
-    alert("สมัครสำเร็จ!");
-    window.location.reload();
+    await setDoc(doc(db, "Account", user), { passwordHash: await hash(pass), role: "user", profileImg: "" });
+    alert("สมัครสำเร็จ!"); window.location.reload();
   }
 
   /* ----- EDIT PROFILE ----- */

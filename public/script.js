@@ -311,48 +311,25 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     fetch("/api/orders?table=" + encodeURIComponent(table))
-  .then(function (res) { return res.json(); })
-  .then(function (orders) {
-
-    if (!Array.isArray(orders) || orders.length === 0) {
-      billContent.innerHTML = "<p class=\"bill-empty\">ยังไม่มีรายการที่สั่งของโต๊ะนี้</p>";
-      return;
-    }
-
-    var grandTotal = 0;
-
-    var html = orders.map(function (order) {
-
-      var total = 0;
-
-      var itemsHtml = order.items.map(function (item) {
-
-        var price = item.price * item.quantity;
-        total += price;
-        grandTotal += price;
-
-        var line = item.name + " x" + item.quantity + " = " + price + " ฿";
-
-        if (item.note)
-          line += " <span class=\"bill-item-note\">(" + item.note + ")</span>";
-
-        return "<li class=\"bill-item\">" + line + "</li>";
-
-      }).join("");
-
-      return "<div class=\"bill-block\">" +
-        "<div class=\"bill-block-head\">สั่งเมื่อ " + formatBillTime(order.createdAt) + "</div>" +
-        "<ul class=\"bill-list\">" + itemsHtml + "</ul>" +
-        "<div class=\"bill-total\">รวมบิลนี้ " + total + " ฿</div>" +
-        "</div>";
-
-    }).join("");
-
-    html += "<div class=\"bill-grand-total\">รวมทั้งหมด " + grandTotal + " ฿</div>";
-
-    billContent.innerHTML = html;
-
-  })
+      .then(function (res) { return res.json(); })
+      .then(function (orders) {
+        if (!Array.isArray(orders) || orders.length === 0) {
+          billContent.innerHTML = "<p class=\"bill-empty\">ยังไม่มีรายการที่สั่งของโต๊ะนี้</p>";
+          return;
+        }
+        var html = orders.map(function (order) {
+          var itemsHtml = order.items.map(function (item) {
+            var line = item.name + " x" + item.quantity + " = " + (item.price * item.quantity) + " ฿";
+            if (item.note) line += " <span class=\"bill-item-note\">(" + item.note + ")</span>";
+            return "<li class=\"bill-item\">" + line + "</li>";
+          }).join("");
+          return "<div class=\"bill-block\">" +
+            "<div class=\"bill-block-head\">สั่งเมื่อ " + formatBillTime(order.createdAt) + "</div>" +
+            "<ul class=\"bill-list\">" + itemsHtml + "</ul>" +
+            "</div>";
+        }).join("");
+        billContent.innerHTML = html;
+      })
       .catch(function () {
         billContent.innerHTML = "<p class=\"bill-empty\">โหลดรายการไม่สำเร็จ</p>";
       });
