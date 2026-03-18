@@ -270,10 +270,12 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     const table = (new URLSearchParams(window.location.search)).get("table") || "-";
+    const user = localStorage.getItem("loginUser") || "guest";
+    
     fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ table: table, items: cart })
+      body: JSON.stringify({ table: table, items: cart, user: user})
     })
       .then(function (res) {
         if (!res.ok) throw new Error("ส่งออเดอร์ไม่สำเร็จ");

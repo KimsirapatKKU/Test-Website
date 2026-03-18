@@ -79,7 +79,7 @@ app.get("/api/menus/:id", async (req, res) => {
 
 app.post("/api/orders", async (req, res) => {
 
-  const { table, items } = req.body;
+  const { table, items, user } = req.body;
 
   if (!items || items.length === 0) {
     return res.status(400).json({ error: "ไม่มีรายการอาหาร" });
@@ -89,6 +89,7 @@ app.post("/api/orders", async (req, res) => {
     const orderData = {
       table: table || "-",
       items,
+      user: user || "guest",
       status: "pending",
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     };
