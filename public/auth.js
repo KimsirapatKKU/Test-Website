@@ -14,7 +14,8 @@ const firebaseConfig = {
   projectId: "ordering-project-75e55"
 };
 
-const app = initializeApp(firebaseConfig);                                                                                                          
+const app = initializeApp(firebaseConfig);    
+const db = getFirestore(app);                                                                                                      
 /* ================= HELPERS ================= */
 async function hash(text) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -97,7 +98,7 @@ document.addEventListener("submit", async (e) => {
           window.location.reload();
       }
     } catch (err) {
-      showError("loginError", "❌ เกิดข้อผิดพลาดในการเชื่อมต่อ");
+      showError("loginError", "❌ เกิดข้อผิดพลาดในการเชื่อมต่อ"); 
     }
   }
 
