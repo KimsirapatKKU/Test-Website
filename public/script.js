@@ -275,7 +275,7 @@ document.addEventListener("DOMContentLoaded", function () {
     fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({table: table, items: cart.map(item => ({ id: item._id,quantity: item.quantity})), user: user })
+      body: JSON.stringify({table: table, items: cart.map(item => ({ id: item.id,quantity: item.quantity})), user: user })
     })
       .then(function (res) {
         if (!res.ok) throw new Error("ส่งออเดอร์ไม่สำเร็จ");
