@@ -15,7 +15,7 @@ function renderMenus(menus) {
 
     card.dataset.cat = menu.category;
     card.innerHTML = `
-      <a href="product.html?id=${menu.id}${tableQuery}"><img src="images/${menu.image}" alt="${menu.name}"></a>
+      <a href="product.html?id=${menu._id}${tableQuery}"><img src="images/${menu.image}" alt="${menu.name}"></a>
       <div class="card-body">
         <div>${menu.name}</div>
         <div class="price">${menu.price} ฿</div>
@@ -203,7 +203,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const subtotal = item.price * item.quantity;
       total += subtotal;
 
-      const identifier = item.id + "_" + (item.note || "");
+      const identifier = item._id + "_" + (item.note || "");
 
       // --- ส่วนสำคัญที่ทำให้ 'ไม่ผัก' และ 'รูป' ขึ้น ---
       // 1. ดึงหมายเหตุ (เช่น ไม่ผัก) มาแสดงเป็นสีเทา
@@ -219,7 +219,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="fw-bold" style="font-size: 1rem;">${item.name}</div>
                     ${noteHtml} 
                     <div class="text-primary fw-bold mt-1">${item.price} ฿</div>
-                    <a href="product.html?id=${item.id}${tableQuery}" class="order-edit-link">แก้ไข</a>
+                    <a href="product.html?id=${item._id}${tableQuery}" class="order-edit-link">แก้ไข</a>
                 </div>
                 <div class="d-flex flex-column align-items-end" style="gap: 8px;">
                     <div class="qty-btn-group">
@@ -244,7 +244,7 @@ document.addEventListener("DOMContentLoaded", function () {
   window.updateQty = function (id, delta) {
     let cart = getCart();
     const idx = cart.findIndex(i => 
-    (i.id + "_" + (i.note || "")) === id
+    (i._id + "_" + (i.note || "")) === id
   );
     if (idx > -1) {
       cart[idx].quantity += delta;
@@ -275,7 +275,7 @@ document.addEventListener("DOMContentLoaded", function () {
     fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ table: table, items: cart, user: user})
+      body: JSON.stringify({table: table, items: cart.map(item => ({ id: item._id,quantity: item.quantity})), user: user })
     })
       .then(function (res) {
         if (!res.ok) throw new Error("ส่งออเดอร์ไม่สำเร็จ");

@@ -72,7 +72,7 @@
     }
 
     const item = {
-      id: product.id,
+      id: product._id,
       name: product.name,
       price: product.price,
       image: product.image,    // ต้องเพิ่มบรรทัดนี้: เพื่อให้ในตะกร้ามีรูป

@@ -88,17 +88,21 @@ app.get("/api/menus/:id", async (req, res) => {
   if (!db) {
     return res.status(500).json({ message: "Database not initialized" });
   }
-  const id = parseInt(req.params.id, 10);
-  if (Number.isNaN(id)) return res.status(400).json({ error: "id ไม่ถูกต้อง" });
+
   try {
-    const snap = await db.collection("Menus").where("id", "==", id).limit(1).get();
-    if (snap.empty) return res.status(404).json({ error: "ไม่พบเมนู" });
-    const doc = snap.docs[0];
+    const doc = await db.collection("Menus").doc(req.params.id).get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: "ไม่พบเมนู" });
+    }
+
     res.json({ _id: doc.id, ...doc.data() });
+
   } catch (error) {
-    res.status(500).json({ message: "Error fetching menus" });
+    res.status(500).json({ message: "Error fetching menu" });
   }
 });
+
 
 
 app.post("/api/orders", async (req, res) => {
@@ -113,9 +117,36 @@ app.post("/api/orders", async (req, res) => {
   }
 
   try {
+    let totalPrice = 0;
+    let newItems = [];
+
+    for (const item of items) {
+      // 🔥 ดึง menu จาก DB
+      const doc = await db.collection("Menus").doc(item.id).get();
+
+      if (!doc.exists) {
+        return res.status(400).json({ error: "ไม่พบเมนู" });
+      }
+
+      const menu = doc.data();
+
+      // ✅ ใช้ราคาจาก DB เท่านั้น
+      const realPrice = menu.price;
+
+      totalPrice += realPrice * item.quantity;
+
+      newItems.push({
+        menuId: item.id,
+        name: menu.name,
+        price: realPrice,
+        quantity: item.quantity
+      });
+    }
+
     const orderData = {
       table: table || "-",
-      items,
+      items: newItems, // ✅ ใช้ของที่ backend สร้างเอง
+      totalPrice,      // ✅ เพิ่มตรงนี้
       user: user || "guest",
       status: "pending",
       createdAt: admin.firestore.FieldValue.serverTimestamp()
@@ -123,11 +154,13 @@ app.post("/api/orders", async (req, res) => {
 
     const ref = await db.collection("Orders").add(orderData);
     const snap = await ref.get();
+
     res.json(serializeOrderDoc(snap));
+
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error creating order" });
   }
-
 });
 
 
