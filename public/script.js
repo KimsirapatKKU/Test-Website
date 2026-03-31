@@ -161,9 +161,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const DRAG_THRESHOLD = 5; // px
 
     tarot.addEventListener("mousedown", startDrag);
-    tarot.addEventListener("touchstart", startDrag);
+    tarot.addEventListener("touchstart", startDrag, { passive: false });
 
     function startDrag(e) {
+      if (e.type === "touchstart" && e.cancelable) {
+        // กันการ scroll หน้า ตอนเริ่มลากบนมือถือ
+        e.preventDefault();
+      }
       isDragging = true;
       moved = false;
       const clientX = e.clientX || (e.touches && e.touches[0].clientX);
@@ -175,10 +179,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     document.addEventListener("mousemove", drag);
-    document.addEventListener("touchmove", drag);
+    document.addEventListener("touchmove", drag, { passive: false });
 
     function drag(e) {
       if (!isDragging) return;
+      if (e.type === "touchmove" && e.cancelable) {
+        // ลากเฉพาะปุ่ม ไม่ให้ทั้งหน้าเลื่อนตามนิ้ว
+        e.preventDefault();
+      }
 
       const clientX = e.clientX || (e.touches && e.touches[0].clientX);
       const clientY = e.clientY || (e.touches && e.touches[0].clientY);
