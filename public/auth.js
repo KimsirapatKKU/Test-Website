@@ -1,4 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
+
 import {
   getFirestore,
   doc,
@@ -7,14 +9,24 @@ import {
   updateDoc
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-/* ================= FIREBASE CONFIG ================= */
+
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyBEyxpZBD5JVRI0GnJgaDDiwujzb74U2hk",
-  authDomain: "ordering-project-75e55.firebaseapp.com",
-  projectId: "ordering-project-75e55"
+  apiKey: "AIzaSyBKgde-m4X41jSNls4_iENfd10kBvi5k7w",
+  authDomain: "food-ordering-e4739.firebaseapp.com",
+  projectId: "food-ordering-e4739",
+  storageBucket: "food-ordering-e4739.firebasestorage.app",
+  messagingSenderId: "393255355775",
+  appId: "1:393255355775:web:d3f935052f69e72bb3464a",
+  measurementId: "G-3KQHR4W82X"
 };
 
-const app = initializeApp(firebaseConfig);    
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);   
 const db = getFirestore(app);                                                                                                      
 /* ================= HELPERS ================= */
 async function hash(text) {
@@ -103,15 +115,37 @@ document.addEventListener("submit", async (e) => {
   }
 
   /* ----- REGISTER ----- */
-  if (e.target.id === "registerForm") {
-    const user = document.getElementById("regUser").value.trim();
-    const pass = document.getElementById("regPass").value;
-    if (pass !== document.getElementById("regPassConfirm").value) {
-      showError("registerError", "❌ รหัสผ่านไม่ตรงกัน"); return;
-    }
-    await setDoc(doc(db, "Account", user), { passwordHash: await hash(pass), role: "user", profileImg: "" });
-    alert("สมัครสำเร็จ!"); window.location.reload();
+if (e.target.id === "registerForm") {
+  const user = document.getElementById("regUser").value.trim();
+  const pass = document.getElementById("regPass").value;
+
+  if (!user) {
+    showError("registerError", "❌ กรุณากรอกชื่อผู้ใช้");
+    return;
   }
+
+  if (pass !== document.getElementById("regPassConfirm").value) {
+    showError("registerError", "❌ รหัสผ่านไม่ตรงกัน");
+    return;
+  }
+
+  const userRef = doc(db, "Account", user);
+  const snap = await getDoc(userRef);
+
+  if (snap.exists()) {
+    showError("registerError", "❌ ชื่อนี้มีผู้ใช้แล้ว");
+    return;
+  }
+
+  await setDoc(userRef, {
+    passwordHash: await hash(pass),
+    role: "user",
+    profileImg: ""
+  });
+
+  alert("สมัครสำเร็จ!");
+  window.location.reload();
+}
 
   /* ----- EDIT PROFILE ----- */
   if (e.target.id === "editProfileForm") {

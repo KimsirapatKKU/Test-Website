@@ -1,45 +1,49 @@
+
 const express = require("express");
 const admin = require("firebase-admin");
 const app = express();
 app.use(express.static("public"));
-app.use(express.json());   
+app.use(express.json());
 
-// Firebase Admin (Firestore) สำหรับเมนู
-// - แนะนำให้ตั้ง env `GOOGLE_APPLICATION_CREDENTIALS` ชี้ไปที่ service account json
-// - หรือวางไฟล์ไว้ที่ `./serviceAccountKey.json`
+// Firebase Admin (Firestore)
+// ลำดับ: 1) env FIREBASE_KEY (JSON เต็ม) เหมาะกับ Render
+//        2) ไฟล์ ./serviceAccountKey.json เหมาะกับเครื่อง dev
+//        3) applicationDefault() ถ้าตั้ง gcloud ADC ไว้
+
+let db;
+let menuCache = [];
+let menuCacheUpdatedAt = 0;
 try {
   if (admin.apps.length === 0) {
     let credential;
+    let source;
 
     if (process.env.FIREBASE_KEY) {
-      credential = admin.credential.cert(
-        JSON.parse(process.env.FIREBASE_KEY)
-      );
+      const parsed = JSON.parse(process.env.FIREBASE_KEY);
+      credential = admin.credential.cert(parsed);
+      source = "FIREBASE_KEY";
+      if (parsed.project_id) console.log("PROJECT ID:", parsed.project_id);
     } else {
-      credential = admin.credential.applicationDefault();
+      try {
+        const serviceAccount = require("./serviceAccountKey.json");
+        credential = admin.credential.cert(serviceAccount);
+        source = "serviceAccountKey.json";
+        if (serviceAccount.project_id) {
+          console.log("PROJECT ID:", serviceAccount.project_id);
+        }
+      } catch {
+        credential = admin.credential.applicationDefault();
+        source = "application default credentials";
+      }
     }
 
     admin.initializeApp({ credential });
+    console.log("Firebase Admin OK (" + source + ")");
   }
-} catch (e) {
-  console.error("Firebase init error:", e);
-}
-
-console.log("FIREBASE:", process.env.FIREBASE_KEY ? "OK" : "NOT FOUND");
-
-try {
-  const parsed = JSON.parse(process.env.FIREBASE_KEY);
-  console.log("PROJECT ID:", parsed.project_id);
-} catch (e) {
-  console.error("JSON ERROR");
-}
-
-let db;
-
-try {
   db = admin.firestore();
 } catch (e) {
-  console.error("Firestore init error:", e);
+  console.error("Firebase / Firestore unavailable:", e.message);
+  db = null;
 }
 
 function toIsoMaybeTimestamp(value) {
@@ -63,46 +67,78 @@ function serializeOrderDoc(doc) {
   };
 }
 
+function normalizeOrderItems(items) {
+  return (Array.isArray(items) ? items : [])
+    .map((item) => {
+      const id = Number(item?.id);
+      const quantity = Math.max(1, Number(item?.quantity) || 1);
+      const note = String(item?.note || "").slice(0, 120);
+      const dining = item?.dining === "takeaway" ? "takeaway" : "dinein";
+      if (!Number.isFinite(id)) return null;
+      // เก็บเฉพาะข้อมูลที่จำเป็นเพื่อลดขนาดเอกสาร Orders
+      return {
+        id,
+        quantity,
+        note,
+        dining
+      };
+    })
+    .filter(Boolean);
+}
 
+async function enrichOrdersWithMenuDetails(orders) {
+  const menuSnap = await db.collection("Menus").get();
+  const menuById = new Map();
+  menuSnap.docs.forEach((doc) => {
+    const data = doc.data() || {};
+    const menuId = Number(data.id);
+    if (Number.isFinite(menuId)) {
+      menuById.set(menuId, data);
+    }
+  });
 
-
-
+  return orders.map((order) => {
+    const rawItems = Array.isArray(order.items) ? order.items : [];
+    const items = rawItems.map((item) => {
+      const id = Number(item?.id);
+      const menu = menuById.get(id) || {};
+      return {
+        id,
+        name: menu.name || `เมนู #${id}`,
+        price: Number(menu.price) || 0,
+        image: menu.image || "",
+        quantity: Math.max(1, Number(item?.quantity) || 1),
+        dining: item?.dining === "takeaway" ? "takeaway" : "dinein",
+        note: String(item?.note || "")
+      };
+    });
+    return { ...order, items };
+  });
+}
 
 app.get("/api/menus", async (req, res) => {
   if (!db) {
     return res.status(500).json({ message: "Database not initialized" });
   }
-  try {
-    const snap = await db.collection("Menus").get();
-    const menus = snap.docs.map((doc) => ({ _id: doc.id, ...doc.data() }));
-    res.json(menus);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching menus" })
+
+  if (menuCache.length === 0) {
+    await loadMenuFromDB(); // กรณี cache ยังว่าง
   }
-})
+  res.json(menuCache);
+});
 
 
 
 // ดึงข้อมูลเมนูแต่ละอัน (สำหรับหน้า product.html)
-app.get("/api/menus/:id", async (req, res) => {
-  if (!db) {
-    return res.status(500).json({ message: "Database not initialized" });
-  }
+app.get("/api/menus/:id", (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) return res.status(400).json({ error: "id ไม่ถูกต้อง" });
 
-  try {
-    const doc = await db.collection("Menus").doc(req.params.id).get();
+  const menu = menuCache.find(m => Number(m.id) === id);
+  if (!menu) return res.status(404).json({ error: "ไม่พบเมนู" });
 
-    if (!doc.exists) {
-      return res.status(404).json({ error: "ไม่พบเมนู" });
-    }
-
-    res.json({ _id: doc.id, ...doc.data() });
-
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching menu" });
-  }
+  res.json(menu);
 });
-
 
 
 app.post("/api/orders", async (req, res) => {
@@ -111,42 +147,16 @@ app.post("/api/orders", async (req, res) => {
   }
 
   const { table, items, user } = req.body;
+  const compactItems = normalizeOrderItems(items);
 
-  if (!items || items.length === 0) {
+  if (compactItems.length === 0) {
     return res.status(400).json({ error: "ไม่มีรายการอาหาร" });
   }
 
   try {
-    let totalPrice = 0;
-    let newItems = [];
-
-    for (const item of items) {
-      // 🔥 ดึง menu จาก DB
-      const doc = await db.collection("Menus").doc(item.id).get();
-
-      if (!doc.exists) {
-        return res.status(400).json({ error: "ไม่พบเมนู" });
-      }
-
-      const menu = doc.data();
-
-      // ✅ ใช้ราคาจาก DB เท่านั้น
-      const realPrice = menu.price;
-
-      totalPrice += realPrice * item.quantity;
-
-      newItems.push({
-        menuId: item.id,
-        name: menu.name,
-        price: realPrice,
-        quantity: item.quantity
-      });
-    }
-
     const orderData = {
       table: table || "-",
-      items: newItems, // ✅ ใช้ของที่ backend สร้างเอง
-      totalPrice,      // ✅ เพิ่มตรงนี้
+      items: compactItems,
       user: user || "guest",
       status: "pending",
       createdAt: admin.firestore.FieldValue.serverTimestamp()
@@ -155,12 +165,20 @@ app.post("/api/orders", async (req, res) => {
     const ref = await db.collection("Orders").add(orderData);
     const snap = await ref.get();
 
-    res.json(serializeOrderDoc(snap));
+    const newOrder = serializeOrderDoc(snap);
 
+    const enriched = await enrichOrdersWithMenuDetails([newOrder]);
+    // 🔥 ยิงไปหา client ทุกคน (เชฟจะเห็นทันที)
+    broadcast({
+      type: "NEW_ORDER",
+      order: enriched[0]
+    });
+
+    res.json(enriched[0]);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Error creating order" });
   }
+
 });
 
 
@@ -191,7 +209,10 @@ app.get("/api/orders", async (req, res) => {
         return tb - ta;
       });
 
-    res.json(orders);
+    // const enrichedOrders = await enrichOrdersWithMenuDetails(orders);
+    // res.json(enrichedOrders);
+    const enrichedOrders = await enrichOrdersWithMenuDetails(orders);
+    res.json(enrichedOrders);
   } catch (error) {
     res.status(500).json({ message: "Error fetching orders" });
   }
@@ -213,8 +234,17 @@ app.put("/api/orders/:id/status", async (req, res) => {
     if (!before.exists) return res.status(404).json({ error: "ไม่พบออเดอร์" });
 
     await ref.update({ status });
-    const after = await ref.get();
-    res.json(serializeOrderDoc(after));
+
+  const after = await ref.get();
+
+  const enriched = await enrichOrdersWithMenuDetails([serializeOrderDoc(after)]);
+  // 🔥 เพิ่มตรงนี้
+  broadcast({
+    type: "UPDATE_ORDER",
+    order: enriched[0]
+  });
+
+  res.json(serializeOrderDoc(after));
   } catch (error) {
     res.status(500).json({ message: "Error updating order status" });
   }
@@ -244,7 +274,7 @@ app.post("/alert/clear", (req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/api/tarot", async (req,res)=>{
+app.get("/api/tarot", async (req, res) => {
   if (!db) {
     return res.status(500).json({ message: "Database not initialized" });
   }
@@ -260,6 +290,42 @@ app.get("/api/tarot", async (req,res)=>{
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
+
+const WebSocket = require("ws");
+const wss = new WebSocket.Server({ server });
+let clients = [];
+
+wss.on("connection", (ws) => {
+  console.log("Client connected");
+  clients.push(ws);
+
+  ws.on("close", () => {
+    clients = clients.filter(c => c !== ws);
+  });
+});
+
+function broadcast(data) {
+  clients.forEach(ws => {
+    ws.send(JSON.stringify(data));
+  });
+}
+
+async function loadMenuFromDB() {
+  if (!db) return [];
+  try {
+    const snap = await db.collection("Menus").get();
+    const menus = snap.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+    menuCache = menus;
+    menuCacheUpdatedAt = Date.now();
+    console.log("Menu cache refreshed:", new Date());
+    return menus;
+  } catch (err) {
+    console.error("Error loading menu:", err);
+    return menuCache; // fallback ใช้ cache เก่า
+  }
+}
+
+setInterval(loadMenuFromDB, 300_000); // 300,000 ms = 5 นาที

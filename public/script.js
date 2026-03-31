@@ -1,31 +1,3 @@
-fetch("/api/menus")
-  .then(res => res.json())
-  .then(menus => renderMenus(menus))
-  .catch(err => console.error(err));
-
-function renderMenus(menus) {
-  const container = document.getElementById("menuContainer");
-  container.innerHTML = "";
-  const table = new URLSearchParams(window.location.search).get("table");
-  const tableQuery = table ? "&table=" + table : "";
-
-  menus.forEach(menu => {
-    const card = document.createElement("div");
-    card.className = "card";
-
-    card.dataset.cat = menu.category;
-    card.innerHTML = `
-      <a href="product.html?id=${menu.id}${tableQuery}"><img src="images/${menu.image}" alt="${menu.name}"></a>
-      <div class="card-body">
-        <div>${menu.name}</div>
-        <div class="price">${menu.price} ฿</div>
-      </div>
-    `;
-
-    container.appendChild(card);
-  });
-}
-
 document.addEventListener("DOMContentLoaded", function () {
 
   /* ======================
@@ -33,6 +5,62 @@ document.addEventListener("DOMContentLoaded", function () {
   ====================== */
   const params = new URLSearchParams(window.location.search);
   const table = params.get('table');
+
+  function showMenuError(msg) {
+    const container = document.getElementById("menuContainer");
+    if (!container) return;
+    container.innerHTML =
+      '<p class="menu-load-error" style="padding:1rem;text-align:center;color:#b42318;">' +
+      msg +
+      "</p>";
+  }
+
+  function renderMenus(menus) {
+    const container = document.getElementById("menuContainer");
+    container.innerHTML = "";
+    const tableQuery = table ? "&table=" + table : "";
+
+    menus.forEach(menu => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.dataset.cat = menu.category;
+      card.innerHTML = `
+        <a href="product.html?id=${menu.id}${tableQuery}"><img src="images/${menu.image}" alt="${menu.name}"></a>
+        <div class="card-body">
+          <div>${menu.name}</div>
+          <div class="price">${menu.price} ฿</div>
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+  }
+
+  // โหลดเมนูสำหรับหน้า index.html
+  fetch("/api/menus")
+    .then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error("/api/menus error:", res.status, data);
+        showMenuError(
+          data.message ||
+            "โหลดเมนูไม่สำเร็จ (" + res.status + ") — บนเซิร์ฟเวอร์อาจยังไม่ตั้งค่า Firebase"
+        );
+        return;
+      }
+      if (!Array.isArray(data)) {
+        console.error("/api/menus: expected array, got", data);
+        showMenuError("ข้อมูลเมนูไม่ถูกต้อง");
+        return;
+      }
+      renderMenus(data);
+    })
+    .catch((err) => {
+      console.error(err);
+      showMenuError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
+    });
+
   const tableEl = document.getElementById('tableNo');
   if (tableEl) {
     tableEl.innerText = "โต๊ะ " + (table || "-");
@@ -120,6 +148,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
   const tarot = document.getElementById("tarotBox");
+  let selectedTarotMenuId = null;
 
   if (tarot) {
 
@@ -127,6 +156,8 @@ document.addEventListener("DOMContentLoaded", function () {
       if (e.target.classList.contains("closeTarot")) return;
 
       let menu = randomMenus[Math.floor(Math.random() * randomMenus.length)];
+      // ผูกไพ่ -> เมนู ด้วยฟิลด์ `id` (แนะนำให้ Tarots.id ตรงกับ Menus.id)
+      selectedTarotMenuId = (menu && (menu.id ?? menu._id)) ?? null;
       document.getElementById("menuResult").innerHTML =
       `<img src="taroimages/${menu.image}" class="tarot-card">`;
       document.getElementById("tarotPopup").style.display = "flex";
@@ -168,6 +199,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.closeTarot = function () {
     document.getElementById("tarotBox").style.display = "none";
+  }
+
+  // redirect ไปหน้า product.html เพื่อเลือก "ทานร้าน/ใส่กล่อง" และ "ไม่ใส่ผัก"
+  window.goToTarotMenu = function () {
+    if (!selectedTarotMenuId) {
+      alert("กรุณากดไพ่ก่อน");
+      return;
+    }
+    const tableParam = table ? "&table=" + encodeURIComponent(table) : "";
+    window.location.href =
+      "product.html?id=" + encodeURIComponent(selectedTarotMenuId) + tableParam;
   }
 
   /* ======================
@@ -240,6 +282,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // index.html (inline script) จะเรียก renderOrderCart ก่อนเปิด popup ตะกร้า
+  window.renderOrderCart = function () {
+    renderOrderList();
+  };
+
   // ฟังก์ชันสำหรับปุ่ม + และ - ในหน้าตะกร้า
   window.updateQty = function (id, delta) {
     let cart = getCart();
@@ -271,11 +318,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     const table = (new URLSearchParams(window.location.search)).get("table") || "-";
     const user = localStorage.getItem("loginUser") || "guest";
+
+    // ส่งข้อมูลแบบเบา เพื่อลดขนาดที่บันทึกลง Firestore (Orders)
+    const compactItems = cart.map(function (item) {
+      return {
+        id: item.id,
+        quantity: item.quantity,
+        note: item.note || "",
+        dining: item.dining || "dinein"
+      };
+    });
     
     fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({table: table, items: cart.map(item => ({ id: item.id,quantity: item.quantity})), user: user })
+      body: JSON.stringify({ table: table, items: compactItems, user: user})
     })
       .then(function (res) {
         if (!res.ok) throw new Error("ส่งออเดอร์ไม่สำเร็จ");
@@ -359,6 +416,9 @@ document.addEventListener("DOMContentLoaded", function () {
         billContent.innerHTML = "<p class=\"bill-empty\">โหลดรายการไม่สำเร็จ</p>";
       });
   };
+
+  // index.html (inline script) จะเรียก loadBill เพื่อกรอกข้อมูลก่อนแสดง popup
+  window.loadBill = window.openBillPopup;
 
   window.closeBillPopup = function () {
     document.getElementById("billPopup").style.display = "none";

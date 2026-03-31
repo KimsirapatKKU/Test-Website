@@ -415,6 +415,25 @@ a.icon-btn {
   min-width: 280px;
 }
 
+/* Tarot popup: จัดปุ่มให้อยู่แนวตั้ง + กึ่งกลาง */
+.popup-tarot{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.popup-tarot .btn{
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.popup-tarot .btn + .btn{
+  margin-top: 12px !important;
+}
+
 /* ไพ่ */
 #tarotBox {
   position: fixed;
@@ -849,122 +868,6 @@ a.icon-btn {
   transform: scale(0.99);
 }
 
-/* ========== หน้าเชฟ (ครัว) ========== */
-.chef-page {
-  min-height: 100vh;
-  padding-bottom: 24px;
-}
-
-.chef-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 20px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  color: #fff;
-}
-
-.chef-logo {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.chef-link-customer {
-  color: #ff9f1c;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.chef-link-customer:hover {
-  text-decoration: underline;
-}
-
-.chef-main {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 20px 16px;
-}
-
-.chef-order-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.chef-empty {
-  text-align: center;
-  padding: 48px 20px;
-  color: var(--color-text-muted);
-  font-size: 16px;
-}
-
-.chef-error {
-  color: #dc2626;
-  text-align: center;
-  padding: 20px;
-}
-
-.chef-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  overflow: hidden;
-  border-left: 4px solid var(--color-primary);
-}
-
-.chef-card-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: #fafafa;
-  border-bottom: 1px solid #eee;
-}
-
-.chef-card-table {
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--color-text);
-}
-
-.chef-card-time {
-  margin-left: auto;
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-.chef-card-items {
-  margin: 0;
-  padding: 12px 16px;
-  list-style: none;
-}
-
-.chef-order-item {
-  padding: 6px 0;
-  font-size: 14px;
-  border-bottom: 1px solid #f5f5f5;
-}
-
-.chef-order-item:last-child {
-  border-bottom: none;
-}
-
-.chef-item-note {
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
-
-.chef-item-tag {
-  display: inline-block;
-  margin-left: 4px;
-  padding: 2px 6px;
-  background: #fef3c7;
-  border-radius: 4px;
-  font-size: 11px;
-  color: #b45309;
-}
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -992,12 +895,15 @@ a.icon-btn {
 
 .popup-box button {
   margin-top: 15px;
-  padding: 8px 16px;
+  padding: 12px 20px;
   border: none;
   background: #28a745;
   color: #fff;
-  border-radius: 5px;
+  border-radius: 10px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: 0 6px 16px rgba(40, 167, 69, 0.25);
 }
 
 /* --- ส่วนที่เพิ่มใหม่สำหรับโปรไฟล์ผู้ใช้ --- */
@@ -1171,8 +1077,7 @@ a.icon-btn {
     font-weight: bold;
 }
 
-.btn-minus { background: white; color: #666; }
-.btn-plus { background: var(--color-primary); color: white; }
+
 
 /* หมายเหตุสีเทาตัวเล็ก */
 .order-item-note {
@@ -1270,8 +1175,6 @@ a.icon-btn {
     cursor: pointer;
 }
 
-.btn-minus { background: white; color: #666; }
-.btn-plus { background: var(--color-primary); color: white; }
 
 /* --- ส่วนที่เพิ่มใหม่สำหรับโปรไฟล์ผู้ใช้ --- */
 .user-profile {
@@ -1444,8 +1347,6 @@ a.icon-btn {
     font-weight: bold;
 }
 
-.btn-minus { background: white; color: #666; }
-.btn-plus { background: var(--color-primary); color: white; }
 
 /* หมายเหตุสีเทาตัวเล็ก */
 .order-item-note {
@@ -1486,8 +1387,6 @@ a.icon-btn {
     cursor: pointer;
 }
 
-.btn-minus { background: #fff; color: #666; }
-.btn-plus { background: var(--color-primary); color: #fff; }
 
 .qty-display {
     padding: 0 8px;
@@ -1541,23 +1440,6 @@ a.icon-btn {
     justify-content: center;
     font-weight: bold;
     cursor: pointer;
-}
-
-.btn-minus { background: white; color: #666; }
-.btn-plus { background: var(--color-primary); color: white; }
-
-.chef-done-btn{
-  background:#ff6b00;
-  color:white;
-  border:none;
-  padding:8px 12px;
-  border-radius:8px;
-  cursor:pointer;
-  margin-top:10px;
-}
-
-.chef-done-btn:hover{
-  background:#e55a00;
 }
 /* ================================
    MOBILE UI FIX
@@ -1716,4 +1598,221 @@ font-weight:bold;
 text-align:right;
 margin-top:15px;
 color:#ff6a00;
+}
+
+/* =========================================================
+   Chef UI Refresh (Foodpanda/Grab style) - CSS only
+   ========================================================= */
+
+.chef-page{
+  --chef-primary: var(--color-primary);
+  --chef-primary-soft: #fff3eb;
+  --chef-primary-soft-2: rgba(232, 93, 4, 0.14);
+  --chef-muted: #6b7280;
+  --chef-card-border: rgba(232, 93, 4, 0.18);
+}
+
+.chef-empty{
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--color-text-muted);
+  font-size: 16px;
+}
+
+.chef-error{
+  color: #dc2626;
+  text-align: center;
+  padding: 20px;
+}
+
+.chef-header{
+  background: linear-gradient(135deg, #111827 0%, #0b1220 100%);
+  padding: 14px 18px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chef-logo{
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+/* รองรับโครงสร้าง chef.html ปัจจุบันที่ใช้ h1 ตรงๆ */
+.chef-header h1{
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.chef-main{
+  padding: 22px 14px;
+}
+
+/* รองรับโครงสร้าง chef.html ปัจจุบันที่ใช้ <main> ตรงๆ */
+.chef-page > main{
+  padding: 22px 14px;
+}
+
+.chef-order-list{
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+
+/* รองรับโครงสร้าง chef.html ปัจจุบันที่ใช้ #chefOrderList */
+#chefOrderList{
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+
+.chef-card{
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: #ffffff;
+  border-left: 6px solid rgba(232, 93, 4, 0.45);
+  box-shadow: 0 10px 30px rgba(17,24,39,0.08);
+  overflow: hidden;
+}
+
+.chef-card-head{
+  padding: 16px 16px 12px 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  border-bottom: 0;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chef-card-table{
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--color-text);
+}
+
+.chef-card-time{
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+.chef-card-total{
+  margin-left: 0;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--chef-primary);
+  background: var(--chef-primary-soft-2);
+  border: 1px solid rgba(232, 93, 4, 0.22);
+  padding: 6px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.chef-card-items{
+  padding: 12px 16px 4px 16px;
+  list-style: none;
+  margin: 0;
+}
+
+.chef-order-item{
+  padding: 10px 0;
+  font-size: 15px;
+  line-height: 1.4;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+.chef-order-item:last-child{
+  border-bottom: none;
+}
+
+.chef-item-note{
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.chef-item-tag{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--chef-primary-soft);
+  border: 1px solid rgba(232, 93, 4, 0.20);
+  font-size: 12px;
+  font-weight: 900;
+  color: #b45309;
+}
+
+.chef-item-price,
+.chef-item-subtotal{
+  font-size: 13px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.03);
+}
+
+.chef-item-subtotal{
+  color: var(--chef-primary);
+  background: rgba(232, 93, 4, 0.10);
+  border: 1px solid rgba(232, 93, 4, 0.18);
+}
+
+.chef-done-btn{
+  width: auto;
+  align-self: flex-start;
+  margin-top: auto;
+  margin-left: 16px;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(232, 93, 4, 1) 0%, rgba(212, 81, 3, 1) 100%);
+  box-shadow: 0 8px 20px rgba(232, 93, 4, 0.18);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+  color: #fff;
+  display: inline-flex;
+  justify-content: center;
+  max-width: fit-content;
+}
+
+.chef-done-btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 34px rgba(232, 93, 4, 0.28);
+  filter: saturate(1.05);
+}
+
+.chef-done-btn:active{
+  transform: translateY(0px) scale(0.99);
+}
+
+/* ปุ่มออกจากระบบใน chef.html (ไม่มี class) */
+.chef-header > button[onclick="chefLogout()"]{
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.22);
+  transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.chef-header > button[onclick="chefLogout()"]:hover{
+  background: rgba(255,255,255,0.22);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.28);
 }
