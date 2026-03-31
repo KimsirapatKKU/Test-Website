@@ -151,28 +151,27 @@ document.addEventListener("DOMContentLoaded", function () {
   let selectedTarotMenuId = null;
 
   if (tarot) {
-
-    tarot.addEventListener("click", function (e) {
-      if (e.target.classList.contains("closeTarot")) return;
-
-      let menu = randomMenus[Math.floor(Math.random() * randomMenus.length)];
-      // ผูกไพ่ -> เมนู ด้วยฟิลด์ `id` (แนะนำให้ Tarots.id ตรงกับ Menus.id)
-      selectedTarotMenuId = (menu && (menu.id ?? menu._id)) ?? null;
-      document.getElementById("menuResult").innerHTML =
-      `<img src="taroimages/${menu.image}" class="tarot-card">`;
-      document.getElementById("tarotPopup").style.display = "flex";
-    });
-
-    /* ===== ลากได้ ===== */
-    let isDragging = false, offsetX, offsetY;
+    /* ===== ลากได้ + แยกจากคลิก ===== */
+    let isDragging = false;
+    let moved = false;
+    let startX = 0;
+    let startY = 0;
+    let offsetX = 0;
+    let offsetY = 0;
+    const DRAG_THRESHOLD = 5; // px
 
     tarot.addEventListener("mousedown", startDrag);
     tarot.addEventListener("touchstart", startDrag);
 
     function startDrag(e) {
       isDragging = true;
-      offsetX = (e.clientX || e.touches[0].clientX) - tarot.offsetLeft;
-      offsetY = (e.clientY || e.touches[0].clientY) - tarot.offsetTop;
+      moved = false;
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      startX = clientX;
+      startY = clientY;
+      offsetX = clientX - tarot.offsetLeft;
+      offsetY = clientY - tarot.offsetTop;
     }
 
     document.addEventListener("mousemove", drag);
@@ -181,16 +180,44 @@ document.addEventListener("DOMContentLoaded", function () {
     function drag(e) {
       if (!isDragging) return;
 
-      let x = (e.clientX || e.touches[0].clientX) - offsetX;
-      let y = (e.clientY || e.touches[0].clientY) - offsetY;
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+      if (!moved) {
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+        if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+          moved = true;
+        }
+      }
+
+      let x = clientX - offsetX;
+      let y = clientY - offsetY;
 
       tarot.style.left = x + "px";
       tarot.style.top = y + "px";
       tarot.style.right = "auto";
     }
 
-    document.addEventListener("mouseup", () => isDragging = false);
-    document.addEventListener("touchend", () => isDragging = false);
+    document.addEventListener("mouseup", () => {
+      isDragging = false;
+    });
+    document.addEventListener("touchend", () => {
+      isDragging = false;
+    });
+
+    // คลิก (เฉพาะกรณีไม่ลาก)
+    tarot.addEventListener("click", function (e) {
+      if (e.target.classList.contains("closeTarot")) return;
+      if (moved) return; // ถ้าลาก ไม่ต้องทำงานเหมือนคลิก
+
+      let menu = randomMenus[Math.floor(Math.random() * randomMenus.length)];
+      // ผูกไพ่ -> เมนู ด้วยฟิลด์ `id` (แนะนำให้ Tarots.id ตรงกับ Menus.id)
+      selectedTarotMenuId = (menu && (menu.id ?? menu._id)) ?? null;
+      document.getElementById("menuResult").innerHTML =
+        `<img src="taroimages/${menu.image}" class="tarot-card">`;
+      document.getElementById("tarotPopup").style.display = "flex";
+    });
   }
 
   window.closePopup = function () {
@@ -241,11 +268,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const tableQuery = table ? "&table=" + table : "";
 
     let total = 0;
-    list.innerHTML = cart.map(function (item) {
+    list.innerHTML = cart.map(function (item, index) {
       const subtotal = item.price * item.quantity;
       total += subtotal;
 
-      const identifier = item.id + "_" + (item.note || "");
+      // รวมรายการในตะกร้าด้วย "เมนู + หมายเหตุ + แบบทาน"
+      const identifier = item.id + "_" + (item.note || "") + "_" + (item.dining || "dinein");
 
       // --- ส่วนสำคัญที่ทำให้ 'ไม่ผัก' และ 'รูป' ขึ้น ---
       // 1. ดึงหมายเหตุ (เช่น ไม่ผัก) มาแสดงเป็นสีเทา
@@ -261,7 +289,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="fw-bold" style="font-size: 1rem;">${item.name}</div>
                     ${noteHtml} 
                     <div class="text-primary fw-bold mt-1">${item.price} ฿</div>
-                    <a href="product.html?id=${item.id}${tableQuery}" class="order-edit-link">แก้ไข</a>
+                    <a href="product.html?id=${item.id}&key=${encodeURIComponent(identifier)}${tableQuery}" class="order-edit-link">แก้ไข</a>
                 </div>
                 <div class="d-flex flex-column align-items-end" style="gap: 8px;">
                     <div class="qty-btn-group">
@@ -291,7 +319,7 @@ document.addEventListener("DOMContentLoaded", function () {
   window.updateQty = function (id, delta) {
     let cart = getCart();
     const idx = cart.findIndex(i => 
-    (i.id + "_" + (i.note || "")) === id
+    (i.id + "_" + (i.note || "") + "_" + (i.dining || "dinein")) === id
   );
     if (idx > -1) {
       cart[idx].quantity += delta;

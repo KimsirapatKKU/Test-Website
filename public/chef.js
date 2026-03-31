@@ -83,6 +83,10 @@ const socket = new WebSocket(`${socketProtocol}://${location.host}`);
         const pricePerItem = Number(item.price) || 0;
   
         let line = `${item.name} x${item.quantity}`;
+
+        // แสดงโหมดทานร้าน / ใส่กล่อง ให้เชฟเห็นชัด ๆ
+        const diningLabel = item.dining === "takeaway" ? "[ใส่กล่อง]" : "[ทานร้าน]";
+        line += ` <span class="chef-item-dining">${diningLabel}</span>`;
         line += ` <span class="chef-item-price">(${pricePerItem} ฿/จาน)</span>`;
         line += ` <span class="chef-item-subtotal">รวม ${subtotal} ฿</span>`;
   
