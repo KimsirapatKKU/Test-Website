@@ -158,7 +158,17 @@ document.addEventListener("DOMContentLoaded", function () {
     let startY = 0;
     let offsetX = 0;
     let offsetY = 0;
+    let ignoreNextClick = false;
     const DRAG_THRESHOLD = 5; // px
+
+    function openTarotCard() {
+      if (!Array.isArray(randomMenus) || randomMenus.length === 0) return;
+      let menu = randomMenus[Math.floor(Math.random() * randomMenus.length)];
+      selectedTarotMenuId = (menu && (menu.id ?? menu._id)) ?? null;
+      document.getElementById("menuResult").innerHTML =
+        `<img src="taroimages/${menu.image}" class="tarot-card">`;
+      document.getElementById("tarotPopup").style.display = "flex";
+    }
 
     tarot.addEventListener("mousedown", startDrag);
     tarot.addEventListener("touchstart", startDrag, { passive: false });
@@ -212,19 +222,23 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     document.addEventListener("touchend", () => {
       isDragging = false;
+      // มือถือบางเครื่องจะไม่ยิง click หลัง preventDefault()
+      if (!moved) {
+        ignoreNextClick = true;
+        openTarotCard();
+      }
     });
 
     // คลิก (เฉพาะกรณีไม่ลาก)
     tarot.addEventListener("click", function (e) {
       if (e.target.classList.contains("closeTarot")) return;
+      if (ignoreNextClick) {
+        ignoreNextClick = false;
+        return;
+      }
       if (moved) return; // ถ้าลาก ไม่ต้องทำงานเหมือนคลิก
 
-      let menu = randomMenus[Math.floor(Math.random() * randomMenus.length)];
-      // ผูกไพ่ -> เมนู ด้วยฟิลด์ `id` (แนะนำให้ Tarots.id ตรงกับ Menus.id)
-      selectedTarotMenuId = (menu && (menu.id ?? menu._id)) ?? null;
-      document.getElementById("menuResult").innerHTML =
-        `<img src="taroimages/${menu.image}" class="tarot-card">`;
-      document.getElementById("tarotPopup").style.display = "flex";
+      openTarotCard();
     });
   }
 
