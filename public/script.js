@@ -275,8 +275,12 @@ document.addEventListener("DOMContentLoaded", function () {
       // รวมรายการในตะกร้าด้วย "เมนู + หมายเหตุ + แบบทาน"
       const identifier = item.id + "_" + (item.note || "") + "_" + (item.dining || "dinein");
 
-      // --- ส่วนสำคัญที่ทำให้ 'ไม่ผัก' และ 'รูป' ขึ้น ---
-      // 1. ดึงหมายเหตุ (เช่น ไม่ผัก) มาแสดงเป็นสีเทา
+      // --- แสดงรายละเอียดเพิ่มเติมในตะกร้า ---
+      // ทานร้าน / ใส่กล่อง
+      const diningLabel = (item.dining === "takeaway") ? "ใส่กล่อง" : "ทานร้าน";
+      const diningHtml = `<span class="order-item-note">${diningLabel}</span>`;
+
+      // หมายเหตุ (เช่น ไม่ผัก)
       const noteHtml = item.note ? `<span class="order-item-note">${item.note}</span>` : "";
 
       // 2. ดึงรูปภาพมาแสดง (ตรวจสอบชื่อ property ให้ตรงกับที่บันทึก)
@@ -287,6 +291,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <img src="${imgPath}" class="order-item-img" onerror="this.src='https://placehold.co/60x60?text=Food'">
                 <div class="flex-grow-1">
                     <div class="fw-bold" style="font-size: 1rem;">${item.name}</div>
+                    ${diningHtml}
                     ${noteHtml} 
                     <div class="text-primary fw-bold mt-1">${item.price} ฿</div>
                     <a href="product.html?id=${item.id}&key=${encodeURIComponent(identifier)}${tableQuery}" class="order-edit-link">แก้ไข</a>
