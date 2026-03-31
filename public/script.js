@@ -159,6 +159,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let offsetX = 0;
     let offsetY = 0;
     let ignoreNextClick = false;
+    let startedFromCloseButton = false;
     const DRAG_THRESHOLD = 5; // px
 
     function openTarotCard() {
@@ -174,6 +175,10 @@ document.addEventListener("DOMContentLoaded", function () {
     tarot.addEventListener("touchstart", startDrag, { passive: false });
 
     function startDrag(e) {
+      startedFromCloseButton = !!(e.target && e.target.classList && e.target.classList.contains("closeTarot"));
+      if (startedFromCloseButton) {
+        return;
+      }
       if (e.type === "touchstart" && e.cancelable) {
         // กันการ scroll หน้า ตอนเริ่มลากบนมือถือ
         e.preventDefault();
@@ -223,10 +228,11 @@ document.addEventListener("DOMContentLoaded", function () {
     document.addEventListener("touchend", () => {
       isDragging = false;
       // มือถือบางเครื่องจะไม่ยิง click หลัง preventDefault()
-      if (!moved) {
+      if (!moved && !startedFromCloseButton) {
         ignoreNextClick = true;
         openTarotCard();
       }
+      startedFromCloseButton = false;
     });
 
     // คลิก (เฉพาะกรณีไม่ลาก)
